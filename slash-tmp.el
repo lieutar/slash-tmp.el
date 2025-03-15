@@ -27,6 +27,7 @@
   delete-directory)
 
 
+
 ;;;; simple utils
 
 (defsubst /tmp/make-temp-file--validate (spec)
@@ -63,7 +64,9 @@
         (suffix    (or (plist-get spec :suffix)  nil))
         (dir-flag  (eq (plist-get spec :type)    'dir))
         (content   (or (plist-get spec :content) nil)))
-  (make-temp-file@/tmp/ prefix dir-flag suffix content)))
+    (let ((result (make-temp-file@/tmp/ prefix dir-flag suffix content)))
+      (while (not (file-exists-p result)) (sit-for 0.005))
+      result)))
 
 ;;;###autoload
 (defun /tmp/make-temp-dir (&rest spec)
@@ -132,3 +135,5 @@ The temporary directory will be deleted after BODY is executed."
   (declare (indent defun))
   `(/tmp/let ((default-directory dir))
      ,@body))
+
+;;; slash-tmp.el ends here

@@ -1,66 +1,39 @@
--include config.mk
-PROJECT		?= $(shell basename "$(shell pwd)")
-INDEX		?= $(shell basename -s .el $(PROJECT))
-EMACS		?= emacs
-PREFIX		?= $(HOME)/.emacs.d/lelde/repos/production
-T		?= $(shell find tests -name '*.test.el')
-DEPLOY_COMMAND  ?= git clone
+EMACS      ?= emacs
+CASK       ?= cask
+TEST_TYPE  ?= ert
+T          ?= $(shell find tests -name '*.test.el')
 
-PWD             := $(shell pwd)
-DEPLOY_TO       := $(PREFIX)/$(INDEX)
-EMACS_OPTS	:= --batch -Q -L . -l config/batch.el
-EMACS_TEST_OPTS := $(EMACS_OPTS) -l config/test.el
-BUNDLED		:= $(INDEX).el
-TARGET		:= $(BUNDLED:.el=.elc)
+PWD	     := $(shell pwd)
+PROJECT      := $(shell basename $(PWD))
+INDEX	     ?= $(shell echo $(PROJECT) | sed -e 's/\.[^.]*$$//' )
+INDEX_EL     := $(INDEX).el
+TARGET	     := $(INDEX).elc
+LT           := $(foreach f,$(T),-l $f)
+SRC_DIR      := .
+SRC_INDEX_EL := $(SRC_DIR)/$(INDEX_EL)
+SUBMOD_DIR   := $(SRC_DIR)/$(INDEX)
+EMACS_OPTS   := --batch -Q -L $(SRC_DIR)
+PHONY	     := build clean test test-ert test-buttercup
 -include custom.mk
 
-#-------------------------------------------------------------------------------
-
-.PHONY: help build clean test deploy
-
-help:
-	@echo build - Builds $(INDEX).elc.
-	@echo clean - Removes $(INDEX).elc.
-	@echo test - Runs tests. If the macro T specified,
-	@echo	this task runs partial tests.
-	@echo deploy - Installes into $(DEPLOY_TO).
+.PHONY: $(PHONY)
 
 build: $(TARGET)
 
 clean:
-	for f in $(TARGET) $(EL_GENERATED);do\
-		if test -f "$$f"; then\
-			rm "$$f";\
-		fi;\
-	done
+	test -f "$(TARGET)" && rm $(TARGET)
 
-test:
-	$(EMACS) $(EMACS_TEST_OPTS) $(T)
+test: test-$(TEST_TYPE)
 
-deploy: $(DEPLOY_TO)
-	cd $(DEPLOY_TO) &&\
-	make clean &&\
-	git pull origin main &&\
-	git merge main
-	make build
+test-ert:
+	$(CASK) exec $(EMACS) $(EMACS_OPTS) -l ert $(LT)\
+		-f ert-run-tests-batch-and-exit
 
-#-------------------------------------------------------------------------------
-$(DEPLOY_TO): $(PREFIX)
-	cd $(PREFIX);\
-	$(DEPLOY_COMMAND) $(PWD) $(PROJECT)\
-	cd $(DEPLOY_TO);\
-	git checkout -b production;
-
-$(PREFIX):
-	mkdir -p $(PREFIX)
-
-$(BUNDLED): src/$(PROJECT).el
-	$(EMACS) $(EMACS_OPTS) $(LELDE_BUNDLE) $< $@
+test-buttercup:
+	$(CASK) exec $(EMACS) $(EMACS_OPTS) -l buttercup $(LT)\
+		-f buttercup-run
 
 %.elc: %.el
 	$(EMACS) $(EMACS_OPTS)\
 		--eval "(setq byte-compile-error-on-warn t)"\
 		-f batch-byte-compile $<
-
-%.el: %.src.el
-	$(EMACS) $(EMACS_OPTS) $(LELDE_SMACRO) $< $@
