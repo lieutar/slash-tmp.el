@@ -65,7 +65,6 @@
         (dir-flag  (eq (plist-get spec :type)    'dir))
         (content   (or (plist-get spec :content) nil)))
     (let ((result (make-temp-file@/tmp/ prefix dir-flag suffix content)))
-      (while (not (file-exists-p result)) (sit-for 0.005))
       result)))
 
 ;;;###autoload
@@ -142,6 +141,25 @@ The temporary directory will be deleted after BODY is executed."
   `(/tmp/let ((default-directory 'dir))
      ,@body))
 
-;;(/tmp/with-temp-dir nil )
+;;;###autoload
+(defun /tmp/weird-magic-spell ()
+  "Perform a magic spell to ensure proper timing.
+
+This function simply calls (sit-for 0). It is sometimes required
+due to asynchronous behavior in Emacs, where certain operations
+may not complete immediately, leading to unexpected results in
+tests or other code that relies on the state of the file system
+or other external processes.
+
+In particular, when working with temporary directories or
+executing external commands, the timing of when the state is
+updated can be unpredictable. Calling this function provides a
+brief pause, allowing Emacs to process any pending events and
+ensure that the expected state is achieved before proceeding.
+
+Use this function judiciously in situations where timing issues
+are suspected, especially in tests that involve file system
+operations or external commands."
+  (sit-for 0))
 
 ;;; slash-tmp.el ends here

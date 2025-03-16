@@ -1,6 +1,9 @@
 (require 'ert)
 (require 'slash-tmp)
 
+(setq $THIS-TEST (or load-file-name buffer-file-name))
+(setq $THIS-DIR  (file-name-directory $THIS-TEST))
+(setq $RSC-DIR   (expand-file-name "rsc" $THIS-DIR))
 
 (ert-deftest /tmp-test/--/simple-utils/ ()
   "Tests for simple utility functions in simplest cases"
@@ -81,8 +84,6 @@
     (should-not (file-exists-p bb))))
 ;;(ert-run-test '/tmp-test/--/tmp/let/with-args)
 
-
-
 (ert-deftest /tmp-test/--/tmp/with-temp-dir ()
   "Tests for /tmp/with-temp-dir"
   (let ((cwd default-directory)
@@ -93,3 +94,11 @@
       (should (file-exists-p dir))
       (should (file-directory-p dir)))
     (should-not (file-exists-p dir))))
+
+(ert-deftest /tmp-test/--/tmp/with-temp-dir/with-tar ()
+  "Tests for /tmp/with-temp-dir and tar"
+  (/tmp/with-temp-dir
+    (/tmp/weird-magic-spell)
+    (call-process "tar" nil nil nil "-xzf" (expand-file-name "hoge.tar.gz"
+                                                             $RSC-DIR))
+    (should (file-directory-p "hoge"))))
