@@ -47,12 +47,12 @@
     (when (and type (null (memq type '(file dir))))
       (error "unknown :type %s" type))
     (when (and prefix (not (stringp prefix)))
-      (error ":prefix have to be a string."))
+      (error ":prefix have to be a string: %S" prefix))
     (when (and suffix (not (stringp suffix)))
-      (error ":suffix have to be a string."))
+      (error ":suffix have to be a string: %S" suffix))
     (when content
       (unless (stringp content)
-        (error ":content have to be a string."))
+        (error ":content have to be a string: %S" content))
       (when (eq type 'dir)
         (error "directory cant have it's content")))))
 
@@ -81,31 +81,33 @@
 (defsubst /tmp/let--validate-binding (binding)
   (unless (symbolp (car binding))
     (error "malformed binding list %S: symbolp: %S" binding (car binding)))
-  (let ((spec (cdr binding)))
-    (condition-case err
-        (progn
-          (unless (plist-get spec :type) (error ":type is required"))
-          (/tmp/make-temp-file--validate spec))
-      (error "malformed binding list %S: %s" binding (cadr err)))))
+  (unless (plist-get (cdr binding) :type)
+    (error ":type is required")))
+
 
 (defun /tmp/let--prepare-binding (binding)
   (setq binding
         (if (symbolp binding)
             (list binding (if (string-suffix-p "/" (symbol-name binding))
-                              'dir 'file))
+                              ''dir ''file))
           binding))
-  (let ((spec (cadr binding)))
-    (cond ((stringp spec)
-           (setcdr binding (list :type file :content spec)))
-          ((symbolp spec)
-           (setcdr binding (list :type spec)))))
+  (let ((spec (cdr binding)))
+    (if (= 1 (length spec))
+        (let ((shorten-spec (car spec)))
+          (cond ((stringp shorten-spec)
+                 (setcdr binding (list :type 'file :content shorten-spec)))
+                ((and (listp shorten-spec)
+                      (eq 'quote (car shorten-spec)))
+                 (setcdr binding (list :type shorten-spec)))))))
   (/tmp/let--validate-binding binding)
   binding)
+;;(insert "\n" (pp(macroexpand '(/tmp/let ((a :type 'file :content "xyz" :prefix (concat "a-" "b")))))))
+
 
 (defun /tmp/let--let-binding (binding)
   (let ((var  (car  binding))
         (spec (cdr  binding)))
-    `(,var (apply #'/tmp/make-temp-file ',spec))))
+    `(,var (apply #'/tmp/make-temp-file ,(cons 'list spec)))))
 
 (defun /tmp/let--delete (file)
   (when (file-exists-p file)
@@ -116,7 +118,11 @@
 ;;;###autoload
 (defmacro /tmp/let (bindings &rest body)
   "Create temporary files and directories for the duration of BODY.
-BINDINGS is a list of variables to create temporary files or directories."
+BINDINGS is a list of variables to create temporary files or directories.
+
+Each BINDINGS are symbols or lists.
+
+"
   (declare (indent defun))
   (setq bindings (mapcar #'/tmp/let--prepare-binding bindings))
   `(let ,(mapcar #'/tmp/let--let-binding bindings)
@@ -133,7 +139,9 @@ BINDINGS is a list of variables to create temporary files or directories."
   "Execute BODY with `default-directory' set to a temporary directory.
 The temporary directory will be deleted after BODY is executed."
   (declare (indent defun))
-  `(/tmp/let ((default-directory dir))
+  `(/tmp/let ((default-directory 'dir))
      ,@body))
+
+;;(/tmp/with-temp-dir nil )
 
 ;;; slash-tmp.el ends here

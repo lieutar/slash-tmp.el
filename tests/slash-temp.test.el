@@ -3,7 +3,7 @@
 
 
 (ert-deftest /tmp-test/--/simple-utils/ ()
-  "Tests for simple utility functions"
+  "Tests for simple utility functions in simplest cases"
   (let ((file (/tmp/make-temp-file))
         (dir  (/tmp/make-temp-dir)))
     (should (file-exists-p file))
@@ -15,7 +15,7 @@
     ))
 
 (ert-deftest /tmp-test/--/simple-utils/with-args/ ()
-  ""
+  "Tests for utility functions with details"
   (let* ((file (/tmp/make-temp-file
                 :prefix "hoge-"
                 :suffix ".fuga"
@@ -28,9 +28,8 @@
     (should (equal content "hoge.fuga"))
     (delete-file file)))
 
-
-(ert-deftest /tmp-test/--/tmp/let ()
-  "Tess for /tmp/let"
+(ert-deftest /tmp-test/--/tmp/let/simplest-usage ()
+  "Tess for /tmp/let to simplest case"
   (let (aa bb cc dd ee ff gg)
     (/tmp/let (a b c/ d e/ f g)
       (setq aa a)
@@ -50,6 +49,38 @@
       (should-not (file-exists-p file)))
     )
   )
+
+
+(ert-deftest /tmp-test/--/tmp/let/with-args ()
+  ""
+  (let ((common-prefix "tmp-test-")
+        aa bb)
+    (/tmp/let ((a :type 'dir
+                  :prefix (concat common-prefix "a-")
+                  :suffix "-dir")
+               (b :type 'file
+                  :prefix (concat common-prefix "b-" )
+                  :suffix "-file"
+                  :content "content-of-b"))
+      (setq aa a)
+      (setq bb b)
+      (should (stringp a))
+      (should (file-directory-p a))
+      (should (string-match "[/\\\\]tmp-test-a-" a))
+      (should (string-match "-dir\\'" a))
+      (should (stringp b))
+      (should-not (file-directory-p b))
+      (should (string-match "[/\\\\]tmp-test-b-" b))
+      (should (string-match "-file\\'" b))
+      (should (equal "content-of-b"
+                     (with-temp-buffer
+                       (insert-file-contents b)
+                       (buffer-substring-no-properties (point-min)(point-max)))))
+      )
+    (should-not (file-exists-p aa))
+    (should-not (file-exists-p bb))))
+;;(ert-run-test '/tmp-test/--/tmp/let/with-args)
+
 
 
 (ert-deftest /tmp-test/--/tmp/with-temp-dir ()

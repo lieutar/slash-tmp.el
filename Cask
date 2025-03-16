@@ -5,9 +5,3 @@
 
 (depends-on "radish"
             :git "file:///home/lieutar/work/emacs/radish.el")
-
-
-
-(development
- (depends-on "ert-runner")
-)
