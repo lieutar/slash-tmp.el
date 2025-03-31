@@ -3,5 +3,7 @@
 
 (package-file "slash-tmp.el")
 
-(depends-on "radish"
-            :git "file:///home/lieutar/work/emacs/radish.el")
+(depends-on "radish"    :git "file:///home/lieutar/work/emacs/radish.el")
+
+(development
+ )
