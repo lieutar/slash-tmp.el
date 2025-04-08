@@ -7,7 +7,7 @@
 ;; Version: 0.1.0
 ;; Keywords: Programming, Elisp, Development
 ;; URL:
-;; Package-Requires: ((emacs "29.3")("radish"))
+;; Package-Requires: ((emacs "29.3")(radish))
 
 ;;; License:
 
