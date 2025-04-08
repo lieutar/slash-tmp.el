@@ -4,9 +4,10 @@
 ;; Copyright (C) 2025  lieutar <lieutar@gmail.com>
 
 ;; Author: lieutar
-;; Version: 0.0.0
+;; Version: 0.1.0
 ;; Keywords: Programming, Elisp, Development
 ;; URL:
+;; Package-Requires: ((emacs "29.3")("radish"))
 
 ;;; License:
 
